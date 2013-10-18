@@ -1,57 +1,42 @@
 import pygame
 from pygame.locals import *
 
-#MAIN CLASS
-class App:
-	def __init__(self):
-		self._running = True;
-		self._display_surf = True;
-		self.size = self.weight, self.height = 640, 400
-		
-	def on_init(self):
-		pygame.init();
-		self._display_surf = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
-		self._running = True
+from Animal import Animal
+from State import State
+from GameState import GameState
+from MiniGame1 import MiniGame1
+from MiniGame2 import MiniGame2
+from MiniGame3 import MiniGame3
+from Menu import Menu
+#parameters
+SCREEN_HEIGHT, SCREEN_WIDTH = 400,400
+BG_COLOR = 150, 150, 80
+#media
+
+#globals
+currentState = MiniGame1();
+
+#init
+pygame.init()
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
+clock = pygame.time.Clock()
+
+
+#Main Loop
+while True:
+	time_passed = clock.tick(50)
 	
-	def on_event(self, event):
+	for event in pygame.event.get():
+		#check events
 		if event.type == pygame.QUIT:
-			self._running = False
-	
-	def on_loop(self):
-		pass
-	
-	def on_render(self):
-		pass
-	
-	def on_cleanup(self):
-		pygame.quit()
+			exit_game()
 		
-	def on_execute(self):
-		if self.on_init() == False:
-			self._running = False
+	#redraw background
+	screen.fill(BG_COLOR)
 		
-		while (self._running):
-			for event in pygame.event.get():
-				self.on_event(event)
-			self.on_loop()
-			self.on_render()
-		self.on_cleanup()
+	#update logic
+	currentState.Update();
 
-#Entity Base
-class Entity(pygame.sprite.Sprite):
-	def __init__(self, x, y):
-		pygame.sprite.Sprite.__init__(self)
-	def update(self):
-		pass
-	def draw(self):
-		pass
-	def onCollision(self, other):
-		pass
-	def checkForMouse(self, mouseX, mouseY):
-		pass
-	
-
-#Start the program
-if __name__ == '__main__':
-	theApp = App()
-	theApp.on_execute()
+	currentState.Draw();
+		
+	pygame.display.flip()
