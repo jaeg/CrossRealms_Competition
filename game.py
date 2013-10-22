@@ -1,11 +1,13 @@
 import pygame
 from pygame.locals import *
+import random
 
 class invader:
-	def __init__(self, x, y, number):
+	def __init__(self, x, y, number, problem):
 		self.x = x
 		self.y = y
 		self.number = number
+		self.problem = problem;
 		self.rectangle = invaderRectangle.move(x,y)
 		self.dead = False
 
@@ -22,7 +24,8 @@ spaceDown = False
 targetNumber = 0
 problem = "0 + 0"
 score = 0
-
+lost = True
+level = 1
 
 #init
 pygame.init()
@@ -32,6 +35,7 @@ clock = pygame.time.Clock()
 
 #MEDIA
 myfont = pygame.font.SysFont("monospace", 15, True)
+headerFont = pygame.font.SysFont("monospace", 50, True)
 backUp = pygame.image.load('Media/backbuttonup.png')
 backOver = pygame.image.load('Media/backbuttonover.png')
 backRectangle = backUp.get_rect().move(0,300);
@@ -62,6 +66,10 @@ bulletImage = pygame.image.load("Media/bullet.png")
 
 def reset():
 	global invaders
+	global level
+	global lost
+	lost = False
+
 	invaders = []
 	nextInvaderX = 0
 	nextInvaderY = 0
@@ -71,12 +79,18 @@ def reset():
 			nextInvaderY += 33
 		else:
 			nextInvaderX += 33
-			
-		invaders.append(invader(nextInvaderX,nextInvaderY, i))
+		invaders.append(invader(nextInvaderX,nextInvaderY, i, str(i) + " + 0"))
 	playerRectangle = player.get_rect().move(184,368)
 	
 def getNewProblem():
-	return "Something here"
+	global targetNumber
+	global problem
+	i = random.randint(0, len(invaders))
+	while (invaders[i].dead):
+		i = random.randint(0,len(invaders))
+	
+	targetNumber = invaders[i].number
+	problem = invaders[i].problem
 def update():
 	if (currentState == "PLAY"):
 		global playerRectangle
@@ -86,32 +100,39 @@ def update():
 		global targetNumber
 		global score
 		global problem
-		keys = pygame.key.get_pressed()
-		if (keys[K_LEFT]):
-			playerRectangle = playerRectangle.move(-2, 0)
-		if (keys[K_RIGHT]):
-			playerRectangle = playerRectangle.move(2, 0)
-		if (keys[K_SPACE]):
-			if (spaceDown == False):
-				bullets.append(bulletImage.get_rect().move(playerRectangle.topleft[0]+8,playerRectangle.topleft[1]))
-				spaceDown = True
-		else:
-			spaceDown = False
-		for i in range(len(bullets)):
-			bullets[i] = bullets[i].move(0,-4)
-			
-		#update the invaders
-		for i in range(len(invaders)):
-			if (invaders[i].dead == False):
-				#check for bullet first
-				for j in range(len(bullets)):
-					if (invaders[i].rectangle.colliderect(bullets[j])):
-						invaders[i].dead = True
-						if (invaders[i].number == targetNumber):
-							score += 10
-							problem = getNewProblem()
-						bullets.remove(bullets[j])
-						break;
+		global lost
+		global level
+		
+		if (lost == False):
+			keys = pygame.key.get_pressed()
+			if (keys[K_LEFT]):
+				playerRectangle = playerRectangle.move(-2, 0)
+			if (keys[K_RIGHT]):
+				playerRectangle = playerRectangle.move(2, 0)
+			if (keys[K_SPACE]):
+				if (spaceDown == False):
+					bullets.append(bulletImage.get_rect().move(playerRectangle.topleft[0]+8,playerRectangle.topleft[1]))
+					spaceDown = True
+			else:
+				spaceDown = False
+			for i in range(len(bullets)):
+				bullets[i] = bullets[i].move(0,-4)
+				
+			#update the invaders
+			for i in range(len(invaders)):
+				if (invaders[i].dead == False):
+					#check for bullet first
+					for j in range(len(bullets)):
+						if (invaders[i].rectangle.colliderect(bullets[j])):
+							invaders[i].dead = True
+							if (invaders[i].number == targetNumber):
+								score += 10
+								getNewProblem()
+							bullets.remove(bullets[j])
+							break;
+					if (invaders[i].rectangle.bottomleft[1] > 368):
+						lost = True;
+					invaders[i].rectangle = invaders[i].rectangle.move(0,1)
 
 def draw():
 	mousePos = pygame.mouse.get_pos()
@@ -142,6 +163,13 @@ def draw():
 		screen.blit(myfont.render("Score: " + str(score), 1, (255,255,255)), (10,450))
 		screen.blit(myfont.render("Problem: " + problem + " = ?", 1, (255,255,255)), (10,475))
 		
+		if (lost):
+			screen.blit(headerFont.render("You Lost!", 1, (255,255,255)), (80,200))
+			if backRectangle.collidepoint(mousePos[0],mousePos[1]):
+				screen.blit(backOver, backRectangle)
+			else:
+				screen.blit(backUp, backRectangle)
+		
 	elif currentState == "CREDITS":
 		screen.blit(creditsImage, (0,0))
 		if backRectangle.collidepoint(mousePos[0],mousePos[1]):
@@ -171,12 +199,13 @@ while running == 1:
 				#check for buttons clicked
 				if playRectangle.collidepoint(mousePos[0],mousePos[1]):
 					currentState = "PLAY"
+					level = 1
 					reset()
 				if creditsRectangle.collidepoint(mousePos[0],mousePos[1]):
 					currentState = "CREDITS"
 				if helpRectangle.collidepoint(mousePos[0],mousePos[1]):
 					currentState = "HELP"
-			elif (currentState == "CREDITS" or currentState == "HELP"):
+			elif (currentState == "CREDITS" or currentState == "HELP" or lost == True):
 				if backRectangle.collidepoint(mousePos[0],mousePos[1]):
 					currentState = "MENU"
 	
