@@ -1,20 +1,28 @@
 import pygame
 from pygame.locals import *
 
-from Animal import Animal
-from State import State
-from GameState import GameState
-from MiniGame1 import MiniGame1
-from MiniGame2 import MiniGame2
-from MiniGame3 import MiniGame3
-from Menu import Menu
+class invader:
+	def __init__(self, x, y, number):
+		self.x = x
+		self.y = y
+		self.number = number
+		self.rectangle = invaderRectangle.move(x,y)
+		self.dead = False
+
 #parameters
-SCREEN_HEIGHT, SCREEN_WIDTH = 400,400
-BG_COLOR = 150, 150, 80
-#media
+SCREEN_HEIGHT, SCREEN_WIDTH = 500,400
+BG_COLOR = 0, 0, 0
+NUMBER_OF_INVADERS = 20
 
 #globals
-currentState = MiniGame1();
+currentState = "MENU"
+invaders = []
+bullets = []
+spaceDown = False
+targetNumber = 0
+problem = "0 + 0"
+score = 0
+
 
 #init
 pygame.init()
@@ -22,21 +30,162 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
 clock = pygame.time.Clock()
 
 
+#MEDIA
+myfont = pygame.font.SysFont("monospace", 15, True)
+backUp = pygame.image.load('Media/backbuttonup.png')
+backOver = pygame.image.load('Media/backbuttonover.png')
+backRectangle = backUp.get_rect().move(0,300);
+#menu
+playUp = pygame.image.load('Media/playbuttonup.png')
+playOver = pygame.image.load('Media/playbuttonover.png')
+playRectangle = playUp.get_rect().move(100,100);
+
+creditsUp = pygame.image.load('Media/creditsbuttonup.png')
+creditsOver = pygame.image.load('Media/creditsbuttonover.png')
+creditsRectangle = creditsUp.get_rect().move(100,125);
+
+helpUp = pygame.image.load('Media/helpbuttonup.png')
+helpOver = pygame.image.load('Media/helpbuttonover.png')
+helpRectangle = helpUp.get_rect().move(100,150);
+
+#credits and help
+creditsImage = pygame.image.load('Media/credits.png')
+helpImage = pygame.image.load('Media/help.png')
+
+#play
+player = pygame.image.load("Media/ship.png")
+playerRectangle = player.get_rect().move(184,368)
+invaderImage = pygame.image.load("Media/invader.png")
+invaderRectangle = invaderImage.get_rect()
+bulletImage = pygame.image.load("Media/bullet.png")
+
+
+def reset():
+	global invaders
+	invaders = []
+	nextInvaderX = 0
+	nextInvaderY = 0
+	for i in range(NUMBER_OF_INVADERS):
+		if nextInvaderX/32 > 9:
+			nextInvaderX = 33
+			nextInvaderY += 33
+		else:
+			nextInvaderX += 33
+			
+		invaders.append(invader(nextInvaderX,nextInvaderY, i))
+	playerRectangle = player.get_rect().move(184,368)
+	
+def getNewProblem():
+	return "Something here"
+def update():
+	if (currentState == "PLAY"):
+		global playerRectangle
+		global spaceDown
+		global invaders
+		global bullets
+		global targetNumber
+		global score
+		global problem
+		keys = pygame.key.get_pressed()
+		if (keys[K_LEFT]):
+			playerRectangle = playerRectangle.move(-2, 0)
+		if (keys[K_RIGHT]):
+			playerRectangle = playerRectangle.move(2, 0)
+		if (keys[K_SPACE]):
+			if (spaceDown == False):
+				bullets.append(bulletImage.get_rect().move(playerRectangle.topleft[0]+8,playerRectangle.topleft[1]))
+				spaceDown = True
+		else:
+			spaceDown = False
+		for i in range(len(bullets)):
+			bullets[i] = bullets[i].move(0,-4)
+			
+		#update the invaders
+		for i in range(len(invaders)):
+			if (invaders[i].dead == False):
+				#check for bullet first
+				for j in range(len(bullets)):
+					if (invaders[i].rectangle.colliderect(bullets[j])):
+						invaders[i].dead = True
+						if (invaders[i].number == targetNumber):
+							score += 10
+							problem = getNewProblem()
+						bullets.remove(bullets[j])
+						break;
+
+def draw():
+	mousePos = pygame.mouse.get_pos()
+	if currentState == "MENU":
+		if playRectangle.collidepoint(mousePos[0],mousePos[1]):
+			screen.blit(playOver, playRectangle)
+		else:
+			screen.blit(playUp, playRectangle)
+			
+		if creditsRectangle.collidepoint(mousePos[0],mousePos[1]):
+			screen.blit(creditsOver, creditsRectangle)
+		else:
+			screen.blit(creditsUp, creditsRectangle)
+			
+		if helpRectangle.collidepoint(mousePos[0],mousePos[1]):
+			screen.blit(helpOver, helpRectangle)
+		else:
+			screen.blit(helpUp, helpRectangle)
+	elif currentState == "PLAY":
+		screen.blit(player,playerRectangle)
+		for i in range(len(invaders)):
+			if (invaders[i].dead == False):
+				screen.blit(invaderImage, invaders[i].rectangle)
+				screen.blit(myfont.render(str(invaders[i].number), 1, (255,0,0)), (invaders[i].rectangle.topleft[0]+10,invaders[i].rectangle.topleft[1]+8))
+		for i in range(len(bullets)):
+			screen.blit(bulletImage, bullets[i])
+		
+		screen.blit(myfont.render("Score: " + str(score), 1, (255,255,255)), (10,450))
+		screen.blit(myfont.render("Problem: " + problem + " = ?", 1, (255,255,255)), (10,475))
+		
+	elif currentState == "CREDITS":
+		screen.blit(creditsImage, (0,0))
+		if backRectangle.collidepoint(mousePos[0],mousePos[1]):
+			screen.blit(backOver, backRectangle)
+		else:
+			screen.blit(backUp, backRectangle)
+			
+	elif currentState == "HELP":
+		screen.blit(helpImage, (0,0))
+		if backRectangle.collidepoint(mousePos[0],mousePos[1]):
+			screen.blit(backOver, backRectangle)
+		else:
+			screen.blit(backUp, backRectangle)
+	
+running = 1
 #Main Loop
-while True:
+while running == 1:
 	time_passed = clock.tick(50)
 	
 	for event in pygame.event.get():
 		#check events
 		if event.type == pygame.QUIT:
-			exit_game()
-		
+			running = 0
+		elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: #left mouse click
+			mousePos = pygame.mouse.get_pos()
+			if (currentState == "MENU"):
+				#check for buttons clicked
+				if playRectangle.collidepoint(mousePos[0],mousePos[1]):
+					currentState = "PLAY"
+					reset()
+				if creditsRectangle.collidepoint(mousePos[0],mousePos[1]):
+					currentState = "CREDITS"
+				if helpRectangle.collidepoint(mousePos[0],mousePos[1]):
+					currentState = "HELP"
+			elif (currentState == "CREDITS" or currentState == "HELP"):
+				if backRectangle.collidepoint(mousePos[0],mousePos[1]):
+					currentState = "MENU"
+	
 	#redraw background
 	screen.fill(BG_COLOR)
-		
-	#update logic
-	currentState.Update();
-
-	currentState.Draw();
+	
+	update()
+	draw()
 		
 	pygame.display.flip()
+	
+	
