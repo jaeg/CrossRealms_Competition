@@ -171,22 +171,21 @@ def update():
 			keys = pygame.key.get_pressed()
 			if (keys[K_LEFT]):
 				if (playerRectangle.topleft[0] > 0):
-					playerRectangle = playerRectangle.move(-2, 0)
+					playerRectangle = playerRectangle.move(-6, 0)
 			if (keys[K_RIGHT]):
 				if (playerRectangle.topleft[0] < SCREEN_WIDTH - 32):
-					playerRectangle = playerRectangle.move(2, 0)
+					playerRectangle = playerRectangle.move(6, 0)
 			if (keys[K_SPACE]):
 				if (spaceDown == False):
 					shootSound.play()
 					bullets.append(bulletImage.get_rect().move(playerRectangle.topleft[0]+8,playerRectangle.topleft[1]))
-					spaceDown = True
-					
+					spaceDown = True	
 			else:
 				spaceDown = False
 			if (keys[K_ESCAPE]):
 				currentState = "MENU"
 			for i in range(len(bullets)):
-				bullets[i] = bullets[i].move(0,-4)
+				bullets[i] = bullets[i].move(0,-10)
 				
 			#update the invaders
 			for i in range(len(invaders)):
@@ -207,7 +206,7 @@ def update():
 					if (invaders[i].rectangle.bottomleft[1] > 368):
 						lost = True;
 						explosion.play();
-					if (ticks%15 == 0):
+					if (ticks % 2 == 0):
 						invaders[i].rectangle = invaders[i].rectangle.move(math.sin(invaders[i].rectangle.topleft[1])*10,1)
 
 def draw():
@@ -259,7 +258,6 @@ def draw():
 					screen.blit(playOver, nextRectangle)
 				else:
 					screen.blit(playUp, nextRectangle)
-		
 	elif currentState == "CREDITS":
 		screen.blit(creditsImage, (0,0))
 		if backRectangle.collidepoint(mousePos[0],mousePos[1]):
@@ -277,8 +275,6 @@ def draw():
 running = 1
 #Main Loop
 while running == 1:
-	time_passed = clock.tick(50)
-	
 	for event in pygame.event.get():
 		#check events
 		if event.type == pygame.QUIT:
