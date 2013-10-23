@@ -222,7 +222,7 @@ def draw():
 		for i in range(len(invaders)):
 			if (invaders[i].dead == False):
 				screen.blit(invaderImage, invaders[i].rectangle)
-				screen.blit(myfont.render(str(invaders[i].number), 1, (255,0,0)), (invaders[i].rectangle.topleft[0]+10,invaders[i].rectangle.topleft[1]+8))
+				screen.blit(myfont.render(str(invaders[i].number), 1, (255,0,0)), (invaders[i].rectangle.topleft[0]+8,invaders[i].rectangle.topleft[1]+8))
 		for i in range(len(bullets)):
 			screen.blit(bulletImage, bullets[i])
 		
