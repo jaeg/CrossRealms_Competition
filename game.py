@@ -1,15 +1,17 @@
 import pygame
 from pygame.locals import *
 import random
+import math
 
 class invader:
-	def __init__(self, x, y, number, problem):
+	def __init__(self, x, y, number, problem, row):
 		self.x = x
 		self.y = y
 		self.number = number
 		self.problem = problem;
 		self.rectangle = invaderRectangle.move(x,y)
 		self.dead = False
+		self.row = row
 
 #parameters
 SCREEN_HEIGHT, SCREEN_WIDTH = 500,400
@@ -24,8 +26,10 @@ spaceDown = False
 targetNumber = 0
 problem = "0 + 0"
 score = 0
-lost = True
+lost = False
+win = True
 level = 1
+ticks = 0
 
 #init
 pygame.init()
@@ -68,7 +72,11 @@ def reset():
 	global invaders
 	global level
 	global lost
+	global win
+	global ticks
+	ticks = 0
 	lost = False
+	win = False
 
 	invaders = []
 	nextInvaderX = 0
@@ -79,20 +87,49 @@ def reset():
 			nextInvaderY += 33
 		else:
 			nextInvaderX += 33
-		invaders.append(invader(nextInvaderX,nextInvaderY, i, str(i) + " + 0"))
+		#generate a problem
+		a = random.randint(0, 10)
+		b = random.randint(0, 10)
+		c = a + b
+		invaders.append(invader(nextInvaderX,nextInvaderY, c, str(a) + " + " + str(b), nextInvaderY/33))
 	playerRectangle = player.get_rect().move(184,368)
+	getNewProblem()
+
+def checkWin():
+	global win
+	win = True
+	for i in range(len(invaders)):
+		if (invaders[i].dead == False):
+			win = False
+	return win
 	
 def getNewProblem():
 	global targetNumber
 	global problem
-	i = random.randint(0, len(invaders))
-	while (invaders[i].dead):
-		i = random.randint(0,len(invaders))
+	if (win == False and lost == False):
+		frontMostRow = getFrontMostRow()
 	
-	targetNumber = invaders[i].number
-	problem = invaders[i].problem
+		i = random.randint(0, len(invaders)-1)
+		
+		while (i < len(invaders)):
+			if (invaders[i].dead or invaders[i].row != frontMostRow):
+				i = random.randint(0,len(invaders)-1)
+			else:
+				break
+		
+		targetNumber = invaders[i].number
+		problem = invaders[i].problem
+	
+def getFrontMostRow():
+	row = 0
+	for i in range(len(invaders)):
+		if invaders[i].row > row and invaders[i].dead == False:
+			row = invaders[i].row
+	return row
+	
 def update():
 	if (currentState == "PLAY"):
+		global ticks
 		global playerRectangle
 		global spaceDown
 		global invaders
@@ -101,9 +138,11 @@ def update():
 		global score
 		global problem
 		global lost
+		global win
 		global level
-		
-		if (lost == False):
+
+		ticks += 1
+		if (lost == False and win == False):
 			keys = pygame.key.get_pressed()
 			if (keys[K_LEFT]):
 				playerRectangle = playerRectangle.move(-2, 0)
@@ -125,6 +164,7 @@ def update():
 					for j in range(len(bullets)):
 						if (invaders[i].rectangle.colliderect(bullets[j])):
 							invaders[i].dead = True
+							checkWin()
 							if (invaders[i].number == targetNumber):
 								score += 10
 								getNewProblem()
@@ -132,7 +172,8 @@ def update():
 							break;
 					if (invaders[i].rectangle.bottomleft[1] > 368):
 						lost = True;
-					invaders[i].rectangle = invaders[i].rectangle.move(0,1)
+					if (ticks%15 == 0):
+						invaders[i].rectangle = invaders[i].rectangle.move(math.sin(invaders[i].rectangle.topleft[1])*10,1)
 
 def draw():
 	mousePos = pygame.mouse.get_pos()
@@ -165,6 +206,13 @@ def draw():
 		
 		if (lost):
 			screen.blit(headerFont.render("You Lost!", 1, (255,255,255)), (80,200))
+			if backRectangle.collidepoint(mousePos[0],mousePos[1]):
+				screen.blit(backOver, backRectangle)
+			else:
+				screen.blit(backUp, backRectangle)
+				
+		if (win):
+			screen.blit(headerFont.render("You've killed all the invaders!", 1, (255,255,255)), (0,200))
 			if backRectangle.collidepoint(mousePos[0],mousePos[1]):
 				screen.blit(backOver, backRectangle)
 			else:
@@ -205,7 +253,7 @@ while running == 1:
 					currentState = "CREDITS"
 				if helpRectangle.collidepoint(mousePos[0],mousePos[1]):
 					currentState = "HELP"
-			elif (currentState == "CREDITS" or currentState == "HELP" or lost == True):
+			elif (currentState == "CREDITS" or currentState == "HELP" or lost or win):
 				if backRectangle.collidepoint(mousePos[0],mousePos[1]):
 					currentState = "MENU"
 	
