@@ -126,8 +126,6 @@ def checkWin():
 			
 		if (win == True):
 			level += 1
-			
-	print level
 	
 def getNewProblem():
 	global targetNumber
