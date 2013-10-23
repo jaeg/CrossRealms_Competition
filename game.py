@@ -39,22 +39,23 @@ clock = pygame.time.Clock()
 
 #MEDIA
 myfont = pygame.font.SysFont("monospace", 15, True)
-headerFont = pygame.font.SysFont("monospace", 50, True)
+headerFont = pygame.font.SysFont("monospace", 20, True)
 backUp = pygame.image.load('Media/backbuttonup.png')
 backOver = pygame.image.load('Media/backbuttonover.png')
-backRectangle = backUp.get_rect().move(0,300);
+backRectangle = backUp.get_rect().move(139,333);
 #menu
 playUp = pygame.image.load('Media/playbuttonup.png')
 playOver = pygame.image.load('Media/playbuttonover.png')
-playRectangle = playUp.get_rect().move(100,100);
+playRectangle = playUp.get_rect().move(139,200);
+nextRectangle = playUp.get_rect().move(139,300);
 
 creditsUp = pygame.image.load('Media/creditsbuttonup.png')
 creditsOver = pygame.image.load('Media/creditsbuttonover.png')
-creditsRectangle = creditsUp.get_rect().move(100,125);
+creditsRectangle = creditsUp.get_rect().move(139,225);
 
 helpUp = pygame.image.load('Media/helpbuttonup.png')
 helpOver = pygame.image.load('Media/helpbuttonover.png')
-helpRectangle = helpUp.get_rect().move(100,150);
+helpRectangle = helpUp.get_rect().move(139,250);
 
 #credits and help
 creditsImage = pygame.image.load('Media/credits.png')
@@ -89,19 +90,37 @@ def reset():
 			nextInvaderX += 33
 		#generate a problem
 		a = random.randint(0, 10)
-		b = random.randint(0, 10)
-		c = a + b
-		invaders.append(invader(nextInvaderX,nextInvaderY, c, str(a) + " + " + str(b), nextInvaderY/33))
+		b = random.randint(1, 10)
+		c = 0
+		d = ""
+		if (level == 1):
+			c = a + b
+			d = str(a) + " + " + str(b)
+		elif (level == 2):
+			c = a - b
+			d = str(a) + " - " + str(b)
+		elif (level == 3):
+			c = a * b
+			d = str(a) + " * " + str(b)
+
+		invaders.append(invader(nextInvaderX,nextInvaderY, c, d, nextInvaderY/33))
 	playerRectangle = player.get_rect().move(184,368)
 	getNewProblem()
 
 def checkWin():
 	global win
-	win = True
-	for i in range(len(invaders)):
-		if (invaders[i].dead == False):
-			win = False
-	return win
+	global level
+	
+	if (win == False):
+		win = True
+		for i in range(len(invaders)):
+			if (invaders[i].dead == False):
+				win = False
+			
+		if (win == True):
+			level += 1
+			
+	print level
 	
 def getNewProblem():
 	global targetNumber
@@ -128,6 +147,7 @@ def getFrontMostRow():
 	return row
 	
 def update():
+	global currentState
 	if (currentState == "PLAY"):
 		global ticks
 		global playerRectangle
@@ -145,15 +165,19 @@ def update():
 		if (lost == False and win == False):
 			keys = pygame.key.get_pressed()
 			if (keys[K_LEFT]):
-				playerRectangle = playerRectangle.move(-2, 0)
+				if (playerRectangle.topleft[0] > 0):
+					playerRectangle = playerRectangle.move(-2, 0)
 			if (keys[K_RIGHT]):
-				playerRectangle = playerRectangle.move(2, 0)
+				if (playerRectangle.topleft[0] < SCREEN_WIDTH - 32):
+					playerRectangle = playerRectangle.move(2, 0)
 			if (keys[K_SPACE]):
 				if (spaceDown == False):
 					bullets.append(bulletImage.get_rect().move(playerRectangle.topleft[0]+8,playerRectangle.topleft[1]))
 					spaceDown = True
 			else:
 				spaceDown = False
+			if (keys[K_ESCAPE]):
+				currentState = "MENU"
 			for i in range(len(bullets)):
 				bullets[i] = bullets[i].move(0,-4)
 				
@@ -178,6 +202,7 @@ def update():
 def draw():
 	mousePos = pygame.mouse.get_pos()
 	if currentState == "MENU":
+		screen.blit(headerFont.render("Math Invaders", 1, (255,255,255)), (133,150))
 		if playRectangle.collidepoint(mousePos[0],mousePos[1]):
 			screen.blit(playOver, playRectangle)
 		else:
@@ -217,6 +242,11 @@ def draw():
 				screen.blit(backOver, backRectangle)
 			else:
 				screen.blit(backUp, backRectangle)
+			if level < 4:
+				if nextRectangle.collidepoint(mousePos[0],mousePos[1]):
+					screen.blit(playOver, nextRectangle)
+				else:
+					screen.blit(playUp, nextRectangle)
 		
 	elif currentState == "CREDITS":
 		screen.blit(creditsImage, (0,0))
@@ -253,7 +283,13 @@ while running == 1:
 					currentState = "CREDITS"
 				if helpRectangle.collidepoint(mousePos[0],mousePos[1]):
 					currentState = "HELP"
-			elif (currentState == "CREDITS" or currentState == "HELP" or lost or win):
+			elif (currentState == "CREDITS" or currentState == "HELP" or lost):
+				if backRectangle.collidepoint(mousePos[0],mousePos[1]):
+					currentState = "MENU"
+			elif (currentState == "PLAY" and win):
+				if (level < 4):
+					if nextRectangle.collidepoint(mousePos[0],mousePos[1]):
+						reset()
 				if backRectangle.collidepoint(mousePos[0],mousePos[1]):
 					currentState = "MENU"
 	
