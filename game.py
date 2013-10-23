@@ -2,6 +2,7 @@ import pygame
 from pygame.locals import *
 import random
 import math
+import pygame.mixer
 
 class invader:
 	def __init__(self, x, y, number, problem, row):
@@ -14,7 +15,7 @@ class invader:
 		self.row = row
 
 #parameters
-SCREEN_HEIGHT, SCREEN_WIDTH = 500,400
+SCREEN_HEIGHT, SCREEN_WIDTH = 450,400
 BG_COLOR = 0, 0, 0
 NUMBER_OF_INVADERS = 20
 
@@ -36,13 +37,14 @@ pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
 clock = pygame.time.Clock()
 
-
+pygame.mixer.init()
 #MEDIA
 myfont = pygame.font.SysFont("monospace", 15, True)
 headerFont = pygame.font.SysFont("monospace", 20, True)
 backUp = pygame.image.load('Media/backbuttonup.png')
 backOver = pygame.image.load('Media/backbuttonover.png')
 backRectangle = backUp.get_rect().move(139,333);
+clickSound = pygame.mixer.Sound("Media/tone8.wav")
 #menu
 playUp = pygame.image.load('Media/playbuttonup.png')
 playOver = pygame.image.load('Media/playbuttonover.png')
@@ -63,10 +65,15 @@ helpImage = pygame.image.load('Media/help.png')
 
 #play
 player = pygame.image.load("Media/ship.png")
+background = pygame.image.load("Media/background.png")
 playerRectangle = player.get_rect().move(184,368)
 invaderImage = pygame.image.load("Media/invader.png")
 invaderRectangle = invaderImage.get_rect()
 bulletImage = pygame.image.load("Media/bullet.png")
+shootSound = pygame.mixer.Sound("Media/shoot.wav")
+explosion = pygame.mixer.Sound("Media/explosion.wav")
+invaderKilled = pygame.mixer.Sound("Media/invaderkilled.wav")
+rightSound = pygame.mixer.Sound("Media/right.wav")
 
 
 def reset():
@@ -172,8 +179,10 @@ def update():
 					playerRectangle = playerRectangle.move(2, 0)
 			if (keys[K_SPACE]):
 				if (spaceDown == False):
+					shootSound.play()
 					bullets.append(bulletImage.get_rect().move(playerRectangle.topleft[0]+8,playerRectangle.topleft[1]))
 					spaceDown = True
+					
 			else:
 				spaceDown = False
 			if (keys[K_ESCAPE]):
@@ -191,11 +200,15 @@ def update():
 							checkWin()
 							if (invaders[i].number == targetNumber):
 								score += 10
+								rightSound.play()
 								getNewProblem()
+							else:
+								invaderKilled.play()
 							bullets.remove(bullets[j])
 							break;
 					if (invaders[i].rectangle.bottomleft[1] > 368):
 						lost = True;
+						explosion.play();
 					if (ticks%15 == 0):
 						invaders[i].rectangle = invaders[i].rectangle.move(math.sin(invaders[i].rectangle.topleft[1])*10,1)
 
@@ -218,6 +231,7 @@ def draw():
 		else:
 			screen.blit(helpUp, helpRectangle)
 	elif currentState == "PLAY":
+		screen.blit(background,(0,0))
 		screen.blit(player,playerRectangle)
 		for i in range(len(invaders)):
 			if (invaders[i].dead == False):
@@ -226,8 +240,8 @@ def draw():
 		for i in range(len(bullets)):
 			screen.blit(bulletImage, bullets[i])
 		
-		screen.blit(myfont.render("Score: " + str(score), 1, (255,255,255)), (10,450))
-		screen.blit(myfont.render("Problem: " + problem + " = ?", 1, (255,255,255)), (10,475))
+		screen.blit(myfont.render("Score: " + str(score), 1, (255,255,255)), (10,405))
+		screen.blit(myfont.render("Problem: " + problem + " = ?", 1, (255,255,255)), (10,420))
 		
 		if (lost):
 			screen.blit(headerFont.render("You Lost!", 1, (255,255,255)), (80,200))
@@ -277,21 +291,28 @@ while running == 1:
 				#check for buttons clicked
 				if playRectangle.collidepoint(mousePos[0],mousePos[1]):
 					currentState = "PLAY"
+					clickSound.play()
+					pygame.mixer.music.rewind()
 					level = 1
 					reset()
 				if creditsRectangle.collidepoint(mousePos[0],mousePos[1]):
 					currentState = "CREDITS"
+					clickSound.play()
 				if helpRectangle.collidepoint(mousePos[0],mousePos[1]):
 					currentState = "HELP"
+					clickSound.play()
 			elif (currentState == "CREDITS" or currentState == "HELP" or lost):
 				if backRectangle.collidepoint(mousePos[0],mousePos[1]):
 					currentState = "MENU"
+					clickSound.play()
 			elif (currentState == "PLAY" and win):
 				if (level < 4):
 					if nextRectangle.collidepoint(mousePos[0],mousePos[1]):
 						reset()
+						clickSound.play()
 				if backRectangle.collidepoint(mousePos[0],mousePos[1]):
 					currentState = "MENU"
+					clickSound.play()
 	
 	#redraw background
 	screen.fill(BG_COLOR)
